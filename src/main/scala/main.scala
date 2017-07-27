@@ -16,9 +16,16 @@ import java.io._
 object main {
   def main(args: Array[String]) {
 
-    val stockIds = List(8244,2222)
+    def getid (ticker: String) : Option[String] = {
+      val site = new URL(s"http://yahoo.brand.edgar-online.com/default.aspx?ticker=FB")
+      val content = HTML.load(site)
+      val id = (content \\ "tr" filter(td=>(td\"@height" toString) == "10px")).mkString
 
-    val stockID = 8244
+      val pattern = "(?<=companyid=)(\\d+)".r
+
+      pattern.findFirstIn(id) //Need to change to Int
+
+    }
 
     def parseHTML(stock: Int): List[List[Any]] = {
 
