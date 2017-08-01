@@ -16,20 +16,29 @@ import java.io._
 object main {
   def main(args: Array[String]) {
 
-    def getid (ticker: String) : Option[String] = {
-      val site = new URL(s"http://yahoo.brand.edgar-online.com/default.aspx?ticker=FB")
+    //case class Stock(Ticker: String, ID: Int)
+
+    def getid (ticker: String) : Map[Option[String],String] = {
+      val site = new URL(s"http://yahoo.brand.edgar-online.com/default.aspx?ticker=$ticker")
       val content = HTML.load(site)
       val id = (content \\ "tr" filter(td=>(td\"@height" toString) == "10px")).mkString
 
       val pattern = "(?<=companyid=)(\\d+)".r
 
-      pattern.findFirstIn(id) //Need to change to Int
+      Map(pattern.findFirstIn(id) -> ticker) //Need to change to Int?
+
+
 
     }
 
-    def parseHTML(stock: Int): List[List[Any]] = {
 
-      val site = new URL(s"http://fundamentals.nasdaq.com/nasdaq_fundamentals.asp?CompanyID=$stock&NumPeriods=40&Duration=1&documentType=1")
+    val stockIds = List(8244,2222)
+
+    val stockID = 8244
+
+    def parseHTML(stockID: Int): List[List[Any]] = {
+
+      val site = new URL(s"http://fundamentals.nasdaq.com/nasdaq_fundamentals.asp?CompanyID=$stockID&NumPeriods=40&Duration=1&documentType=1")
       val content = HTML.load(site)
 
       val PeriodsDateHTML = content \\ "td" filter(td=>(td\"@class" toString) == "dkbluert" )
@@ -46,14 +55,12 @@ object main {
 
       val IncomeStatement = z.toList.filter(_.nonEmpty).grouped(QuarterDates.size)toList
 
-      val table = List(Periods,QuarterDates,List.fill(QuarterDates.length) (stock)) ::: IncomeStatement
-
-      if (table.size >= 1) table else null
+      List(Periods,QuarterDates,List.fill(QuarterDates.length) (stockID)) ::: IncomeStatement
 
     }
 
 
-
+    //parseHTML(getid("FB")).foreach(println)
 
     def addList(stocks: List[Int]): List[List[Any]] = {
 
@@ -80,7 +87,7 @@ object main {
     // ,"Additional Income/Expense Items","Earnings Before Interest and Tax","Earnings Expense","Earnings Before Tax"," Income Tax","Net Income-Cont. Operations"," Discontinued Operations"
     // ,"Net Income", "Net Income Application to Common Shareholders")
 
-    val site = new URL(s"http://fundamentals.nasdaq.com/nasdaq_fundamentals.asp?CompanyID=$stockID&NumPeriods=40&Duration=1&documentType=1")
+    val site = new URL(s"http://fundamentals.nasdaq.com/nasdaq_fundamentals.asp?CompanyID=$stockID&NumPeriods=40&Duration=1&documentType=2")
 
     val content = HTML.load(site) //make HTML to XML
 
@@ -88,28 +95,43 @@ object main {
       td=>
         ((td\"@class" toString) == "body1" && (td\"@height" toString) == "20") ||
           ((td\"@class" toString) == "indent" && (td\"@height" toString) == "20") ||
-        ((td\"@class" toString) == "fundnum" && (td\"@width" toString) == "80"))
+        ((td\"@class" toString) == "fundnum"))
 
 
     //println(a.toString)
 
     val d = a.text.split("(?<=\\d)(?=[A-Z])|\\n").map(_.trim).filter(_.nonEmpty).toList
 
+//    val e = a.map(_.text).toList
+
     val check = d.grouped(41)
 
-    check.foreach(println)
+//    check.foreach(println)
 
     //table.foreach(println)
 
-//    def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
-//      val p = new java.io.PrintWriter(f)
-//      try { op(p) } finally { p.close() }
-//    }
-//
-//    val data = table.transpose
-//    printToFile(new File("example.txt")) {
-//      p => data.foreach(p.println)
-//    }
+    def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
+      val p = new java.io.PrintWriter(f)
+      try { op(p) } finally { p.close() }
+    }
+
+
+    val Tickers: List[String] = List("FB","AAPL","MSFT","BAC")
+
+    var abc: Map[Option[String],String] = Map()
+
+    for (t <- Tickers) {
+      abc = abc ++ getid(t)
+    }
+
+     //val stockTickers = Tickers.foreach(t => abc ++ getid(t))
+
+    println(abc)
+
+    val data = abc
+    printToFile(new File("example.txt")) {
+      p => data.foreach(p.println)
+    }
 
 
   }
